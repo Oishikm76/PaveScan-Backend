@@ -1,1 +1,57 @@
+# ---------- dashboard.html ----------
+# Live map + live accelerometer RMS plot
 
+
+dashboard_html = """
+<!DOCTYPE html>
+<html>
+<head>
+<title>PaveScan Live Dashboard</title>
+<style>
+body { background:#111; color:white; font-family:Arial; }
+#map { height: 45vh; margin-bottom:10px; }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+<h2>PaveScan – Live Monitoring</h2>
+<div id="map"></div>
+<div id="chart" style="height:40vh;"></div>
+
+
+<script>
+var map = L.map('map').setView([23.75,90.36], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+var marker = L.marker([23.75,90.36]).addTo(map);
+var polyline = L.polyline([], {color:'cyan'}).addTo(map);
+
+
+var accelTrace = { y:[], mode:'lines', name:'Accel RMS', line:{color:'cyan'} };
+var layout = { paper_bgcolor:'#111', plot_bgcolor:'#111', font:{color:'white'} };
+Plotly.newPlot('chart', [accelTrace], layout);
+
+
+theSocket = new WebSocket("wss://YOUR-RENDER-URL/ws");
+
+
+theSocket.onmessage = function(event) {
+let data = JSON.parse(event.data);
+
+
+marker.setLatLng([data.lat, data.lon]);
+polyline.addLatLng([data.lat, data.lon]);
+
+
+let rms = Math.sqrt(data.accel_x*data.accel_x + data.accel_y*data.accel_y);
+Plotly.extendTraces('chart', { y:[[rms]] }, [0]);
+};
+</script>
+</body>
+</html>
+"""
+
+
+with open("dashboard.html", "w") as f:
+f.write(dashboard_html)
